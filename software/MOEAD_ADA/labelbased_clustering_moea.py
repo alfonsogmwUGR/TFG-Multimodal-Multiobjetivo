@@ -4,6 +4,8 @@ from sklearn.metrics import pairwise_distances
 #from sklearn.metrics.pairwise import euclidean_distances
 
 
+import copy as cp
+
 """
 def normalize(dataset):
 
@@ -68,6 +70,13 @@ class LabelBasedClusteringMOEA:
 
 	# Obtener vector de funciones objetivo (f-values) de una solución x
 	def f(self, x):
+		if len(set(x)) < 2:
+			if self._maximization:
+				fill_value = -9999.9999
+			else:
+				fill_value = 9999.9999
+			return np.full(len(self._objective_functions),fill_value)
+		
 		self._evals += 1
 		# Cada función objetivo debe ejecutarse con su correspondiente tupla de parámetros
 		return np.array([obj_function(self._data, x, *funct_args) for obj_function,funct_args in zip(self._objective_functions,self._obj_functs_args)])
@@ -144,7 +153,7 @@ class LabelBasedClusteringMOEA:
 ###############################################################################
 	
 	
-	# Operador de cruce en un punto
+	# Operador de cruce uniforme
 	def uniform_crossover(self, parent_a, parent_b):
 		probabilities = np.random.uniform(size=parent_a.size)
 		return np.where(probabilities > self._prob_crossover, parent_a, parent_b)
@@ -376,12 +385,12 @@ class LabelBasedClusteringMOEA:
 	# y si el problema de optimización consiste en maximizar o minimizar
 	def compare_decomposition_values(self, a, b, lambda_weight_vector):
 		if self._decomposition_method == "Tchebycheff":
-			return self.tchebycheff_approach(a, lambda_weight_vector) < self.tchebycheff_approach(b, lambda_weight_vector)
+			return self.tchebycheff_approach(a, lambda_weight_vector) <= self.tchebycheff_approach(b, lambda_weight_vector)
 		elif self._decomposition_method == "Weighted Sum Approach":
 			if self._maximization:
-				return self.weighted_sum_approach(a, lambda_weight_vector) > self.weighted_sum_approach(b, lambda_weight_vector)
+				return self.weighted_sum_approach(a, lambda_weight_vector) >= self.weighted_sum_approach(b, lambda_weight_vector)
 			else:
-				return self.weighted_sum_approach(a, lambda_weight_vector) < self.weighted_sum_approach(b, lambda_weight_vector)
+				return self.weighted_sum_approach(a, lambda_weight_vector) <= self.weighted_sum_approach(b, lambda_weight_vector)
 	
 
 ###############################################################################
@@ -428,24 +437,24 @@ class LabelBasedClusteringMOEA:
 				self._z = np.amax(self._FV, axis=0)
 			else:
 				self._z = np.amin(self._FV, axis=0)
-				#self._z = np.array([0.0,0.0,0.0])
 		
 		
 
 				
 		# Vectores de pesos lambda
 		# SUS ELEMENTOS DEBEN SUMAR 1
-		self._lambdas = normalize(np.matrix(np.random.randint(low = 1, high = 99,
-										 size = (self._population_size, self._num_objectives)),
-										 dtype = np.float))
-
+		#self._lambdas = normalize(np.matrix(np.random.randint(low = 1, high = 99,
+		#								 size = (self._population_size, self._num_objectives)),
+		#								 dtype = np.float))
+		self._lambdas = normalize(np.random.randint(low = 1, high = 99,
+									size = (self._population_size, self._num_objectives)))
 		
 		# INICIALIZACIÓN DEL VECINDARIO
 		# Matriz de distancias de los vectores lambda
 		lambdas_distances = pairwise_distances(self._lambdas, Y=None, metric='euclidean')
 		# Vecindario de cada vector de pesos lambda-i
 		self._lambda_neighborhood = lambdas_distances.argsort(axis = 1)[:,1:self._neighborhood_size+1] # COMPROBADO
-		
+		#self._lambda_neighborhood = lambdas_distances.argsort(axis = 1)[:,:self._neighborhood_size]
 		
 ###############################################################################
 ###############################################################################

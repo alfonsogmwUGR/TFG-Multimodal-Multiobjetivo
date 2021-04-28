@@ -45,19 +45,21 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 		# Primero, se debe actualizar vect. de referencia z
 		
 		if self._maximization:
+			
 			self._z = np.maximum(self._z, new_obj_vector)
 			self._z_worst = np.minimum(self._z_worst, new_obj_vector)
-			
+						
 			norm_obj_vector = (new_obj_vector-self._z_worst)/(self._z-self._z_worst)
-			
+				
 			norm_FV = (self._FV-self._z_worst)/(self._z-self._z_worst)
 			#for i in range(self._FV.shape[0]):
 			#	self._FV[i] = (self._FV[i]-self._z_worst)/(self._z-self._z_worst)
 			
 		else:
+			
 			self._z = np.minimum(self._z, new_obj_vector)
 			self._z_worst = np.maximum(self._z_worst, new_obj_vector)
-			
+						
 			norm_obj_vector = (new_obj_vector-self._z)/(self._z_worst-self._z)
 			
 			norm_FV = (self._FV-self._z)/(self._z_worst-self._z)
