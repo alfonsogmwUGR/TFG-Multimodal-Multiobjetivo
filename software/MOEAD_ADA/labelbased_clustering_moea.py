@@ -117,21 +117,6 @@ class LabelBasedClusteringMOEA:
 
 
 
-###############################################################################
-###############################################################################
-		
-	
-	# Compara vectores solución teniendo en cuenta el método de descomposición
-	# y si el problema de optimización consiste en maximizar o minimizar
-	def compare_scalar_values(self, a, b, lambda_weight_vector):
-		if self._decomposition_method == "Tchebycheff":
-			return self.tchebycheff_approach(a, lambda_weight_vector) < self.tchebycheff_approach(b, lambda_weight_vector)
-		elif self._decomposition_method == "Weighted Sum Approach":
-			if self._maximization:
-				return self.weighted_sum_approach(a, lambda_weight_vector) > self.weighted_sum_approach(b, lambda_weight_vector)
-			else:
-				return self.tchebycheff_approach(a, lambda_weight_vector) < self.tchebycheff_approach(b, lambda_weight_vector)
-	
 
 ###############################################################################
 ###############################################################################
@@ -443,9 +428,7 @@ class LabelBasedClusteringMOEA:
 				
 		# Vectores de pesos lambda
 		# SUS ELEMENTOS DEBEN SUMAR 1
-		#self._lambdas = normalize(np.matrix(np.random.randint(low = 1, high = 99,
-		#								 size = (self._population_size, self._num_objectives)),
-		#								 dtype = np.float))
+
 		self._lambdas = normalize(np.random.randint(low = 1, high = 99,
 									size = (self._population_size, self._num_objectives)))
 		

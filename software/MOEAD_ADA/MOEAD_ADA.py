@@ -51,9 +51,8 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 						
 			norm_obj_vector = (new_obj_vector-self._z_worst)/(self._z-self._z_worst)
 				
-			norm_FV = (self._FV-self._z_worst)/(self._z-self._z_worst)
-			#for i in range(self._FV.shape[0]):
-			#	self._FV[i] = (self._FV[i]-self._z_worst)/(self._z-self._z_worst)
+			norm_FV = (self._FV-self._z_worst)/(self._z-self._z_worst) # COMPROBADO
+
 			
 		else:
 			
@@ -62,9 +61,8 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 						
 			norm_obj_vector = (new_obj_vector-self._z)/(self._z_worst-self._z)
 			
-			norm_FV = (self._FV-self._z)/(self._z_worst-self._z)
-			#for i in range(self._FV.shape[0]):
-			#	self._FV[i] = (self._FV[i]-self._z)/(self._z_worst-self._z)
+			norm_FV = (self._FV-self._z)/(self._z_worst-self._z) # COMPROBADO
+
 		
 		return norm_obj_vector, norm_FV
 	
@@ -73,7 +71,6 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 ###############################################################################
 
 	# Asignar al individuo 'x' el j-ésimo subproblema
-	# PRECONDICIÓN: F(x) debe estar normalizado (valores entre 0 y 1)
 	def assign_to_jth_subproblem(self, f_x):
 		
 		#scalar_values = np.array([self.scalarizing_function(f_x, self._lambdas[k]) for k in range(self._num_subproblems)])
@@ -142,11 +139,7 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			
 			# Seleccionar aleatoriamente dos vectores de toda la población
 			parents = np.random.choice(np.arange(self._population_size), size=2, replace=False)
-			#print("Parents:")
-			#print(self._population[parents[0]])
-			#print("-----")
-			#print(self._population[parents[1]])
-			#print()
+
 
 			# Cruzas los dos vectores obtenidos para generar descendencia 'u'
 			u = self.crossover(self._population[parents[0]], self._population[parents[1]])
@@ -170,16 +163,7 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			
 			# ASIGNACIÓN
 			# Asignar el individuo 'u' al j-ésimo subproblema
-			#scalar_values = np.array([self.scalarizing_function(norm_f_u, self._lambdas[k]) for k in range(self._num_subproblems)])
-			#if self._maximization:
-			#	j = np.argmax(scalar_values)
-			#else:
-			#	j = np.argmin(scalar_values)
 			j = self.assign_to_jth_subproblem(norm_f_u)
-				
-			#print("Scalar values for offspring:")
-			#print(scalar_values)
-			#print("Best scalar value (j-th): {} ({})".format(j,scalar_values[j]))
 			
 			
 			# Generar subconjunto X a partir de los individuos de P (población)
@@ -187,8 +171,8 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			#    - Están asignados al j-ésimo subproblema
 			#    - Se encuentran en el vecindario de u (en espacio de soluciones)
 
-			reshaped_f_u = np.reshape(norm_f_u, (1,norm_f_u.size))
-			u_distances = euclidean_distances(reshaped_f_u, self._FV)
+			reshaped_u = np.reshape(u, (1,u.size))
+			u_distances = euclidean_distances(reshaped_u, self._population)
 			u_neigborhood = np.argsort(u_distances)[:,1:self._neighborhood_size+1]
 			X = [i for i in range(self._population_size) if (self._assignated_subproblems[i] == j) and (i in u_neigborhood)]
 			#print("X:")	# DEBUG
@@ -203,16 +187,16 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			
 			# ELIMINACIÓN
 			# Eliminamos todos los individuos de 'X' superados por 'u'
-			delete_indices = np.array([x_index for x_index in X if self.compare_scalar_values(norm_f_u, norm_FV[x_index], self._lambdas[j])])
+			worse_than_u = np.array([x_index for x_index in X if self.compare_decomposition_values(norm_f_u, norm_FV[x_index], self._lambdas[j])])
 			#print("Delete indices:")		# DEBUG
 			#print(delete_indices)	 	# DEBUG
 			
-			b_winner = delete_indices.size > 0
+			b_winner = worse_than_u.size > 0
 			#print("Winner: {}".format(b_winner))
 			if b_winner:
-				self._population = np.delete(self._population, delete_indices, axis=0)
-				self._FV = np.delete(self._FV, delete_indices, axis=0)
-				self._assignated_subproblems = np.delete(self._assignated_subproblems, delete_indices)
+				self._population = np.delete(self._population, worse_than_u, axis=0)
+				self._FV = np.delete(self._FV, worse_than_u, axis=0)
+				self._assignated_subproblems = np.delete(self._assignated_subproblems, worse_than_u)
 			
 			"""
 			for x_index in X:
@@ -306,3 +290,20 @@ if __name__ == "__main__":
 	print(v4)
 	print(v_min)
 	print()
+	
+	
+	# Normalizar matriz
+	
+	matr = np.array([[2,66,4,2,8],
+				     [9,1,64,84,33],
+				     [2,24,7,43,5],
+				     [76,2,5,67,39],
+				     [12,23,77,6,4]])
+		
+	z_max = np.amax(matr)
+	z_min = np.amin(matr)
+				
+		
+	norm_matr = (matr-z_min)/(z_max-z_min)
+	
+
