@@ -6,17 +6,9 @@ from sklearn.metrics import pairwise_distances
 
 import copy as cp
 
-"""
-def normalize(dataset):
-
-	mins = np.min(dataset, axis = 0)
-	max_minus_min = np.max(dataset, axis = 0) - mins
-	max_minus_min[max_minus_min == 0.0] = 1
-	
-	return (dataset - mins)/max_minus_min
-"""
 
 
+# Normaliza una matriz de datos para que los elementos de cada fila sumen 1
 def normalize(dataset):
 	norm_dataset = np.zeros(dataset.shape)
 	for i in range(dataset.shape[0]):
@@ -24,11 +16,13 @@ def normalize(dataset):
 	return norm_dataset
 
 
-###############################################################################
-###############################################################################
 
+#############################################################################
+#############################################################################
+# Clase para MOEA con esquema de representación basado en etiquetas (enteros)
+#############################################################################
+#############################################################################
 
-# Clase padre para MOEA con esquema de representación basado en etiquetas (enteros)
 
 class LabelBasedClusteringMOEA:
 	
@@ -51,8 +45,8 @@ class LabelBasedClusteringMOEA:
 		
 		# N
 		self._population_size = num_subproblems
-		# D
-		self._dimensionality = data.shape[0] # Representación por etiquetas (número de instancias en el dataset)
+		# D (número de instancias en el dataset)
+		self._dimensionality = data.shape[0]
 		# m
 		self._num_objectives = len(objective_functions) # objective_functions.size
 		# T (tamaño del vecindario de lambdas)
@@ -392,10 +386,6 @@ class LabelBasedClusteringMOEA:
 		self._last_EP_update_epoch = -1
 		
 		# Población externa
-		# (Como lista)
-		#self._EP = []
-		#self._EP_chromosomes = []
-		# (Como array)
 		self._EP = np.empty(shape=(0, self._num_objectives))
 		self._EP_chromosomes = np.empty(shape=(0, self._dimensionality))
 		

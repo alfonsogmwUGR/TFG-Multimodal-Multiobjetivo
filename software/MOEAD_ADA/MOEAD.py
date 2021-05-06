@@ -383,36 +383,7 @@ if __name__ == "__main__":
 	print()
 	
 	
-	"""
-	wei = normalize(np.random.randint(low = 1, high = 99, size = (20, 4)))
-	print("Vectores de pesos")
-	print(wei)
-	weight_gen = WeightsGenerator(4)
-	wei2 = np.empty(shape = (20, 4))
-	for i in range(20):
-		weights_list = weight_gen.simple_method()
-		wei2[i,:] = np.array(weights_list)
-	print()
-	
-	
-	print("Vectores de pesos BIEN HECHOS")
-	dat = np.matrix(np.random.randint(low = 1, high = 99, size = (20, 4)), dtype = np.float)
-	wei3 = normalize(dat)
-	print(dat)
-	print(wei3)
-	
-	print()
-	print("Sumas de filas")
-	for i in range(20):
-		print(i)
-		print(wei2[i])
-		print(wei3[i])
-		print(np.sum(wei2[i]))
-		print(np.sum(wei3[i]))
-	"""
-	
-	
-	print("Comprobar si una fila dada existe en una matriz")
+
 	
 	r = np.array([5,2,7,4])
 	r_not = np.array([23,77,44,99])
@@ -420,3 +391,6 @@ if __name__ == "__main__":
 					[99,55,3,2],
 					[5,2,7,4],
 					[22,77,44,99]])
+	
+
+	

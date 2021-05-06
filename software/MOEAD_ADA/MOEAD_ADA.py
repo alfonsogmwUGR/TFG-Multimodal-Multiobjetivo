@@ -104,7 +104,7 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			self._z_worst = np.amax(self._FV, axis=0)
 		
 		# Array con asignaciones de subproblemas.
-		# subproblem_allocation[i] = j ---> al i-ésimo individuo de la población
+		# assignated_subproblems[i] = j ---> al i-ésimo individuo de la población
 		# se le ha asignado el j-ésimo subproblema (j-ésimo vector de pesos)
 		self._assignated_subproblems = np.zeros(self._num_subproblems)
 		
@@ -122,7 +122,7 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 		while self._evals < max_evals:
 			start_epoch = time.time()
 			
-			# Actualizar tamaño de la poblacón (¿hace falta?)
+			# Actualizar tamaño de la poblacón
 			self._population_size = self._population.shape[0]
 		
 			#print("mu -> {}".format(self._population_size))
