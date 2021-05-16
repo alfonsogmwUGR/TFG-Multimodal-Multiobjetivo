@@ -73,11 +73,11 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 	# Asignar al individuo 'x' el j-ésimo subproblema
 	def assign_to_jth_subproblem(self, f_x):
 		
-		#scalar_values = np.array([self.scalarizing_function(f_x, self._lambdas[k]) for k in range(self._num_subproblems)])
+
 		if self._decomposition_method == "Tchebycheff":
 			scalar_values = np.array([self.tchebycheff_approach(f_x, self._lambdas[k]) for k in range(self._num_subproblems)])
 			j = np.argmin(scalar_values)
-		elif self._decomposition_method == "Weighted Sum Approach":
+		elif self._decomposition_method == "Weighted Sum Approach" or self._decomposition_method == "weighted_sum_approach":
 			scalar_values = np.array([self.weighted_sum_approach(f_x, self._lambdas[k]) for k in range(self._num_subproblems)])
 			j = np.argmax(scalar_values)
 		else:
@@ -172,8 +172,8 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			#    - Se encuentran en el vecindario de u (en espacio de soluciones)
 
 			reshaped_u = np.reshape(u, (1,u.size))
-			u_distances = euclidean_distances(reshaped_u, self._population)
-			u_neigborhood = np.argsort(u_distances)[:,1:self._neighborhood_size+1]
+			u_distances = euclidean_distances(reshaped_u, self._population).flatten()
+			u_neigborhood = np.argsort(u_distances)[0:self._neighborhood_size]
 			X = [i for i in range(self._population_size) if (self._assignated_subproblems[i] == j) and (i in u_neigborhood)]
 			#print("X:")	# DEBUG
 			#print(X)		# DEBUG
@@ -198,13 +198,6 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 				self._FV = np.delete(self._FV, worse_than_u, axis=0)
 				self._assignated_subproblems = np.delete(self._assignated_subproblems, worse_than_u)
 			
-			"""
-			for x_index in X:
-				if self.compare_scalar_values(u,self._population[x_index]):
-					# Eliminar de la población al individuo de X
-					self._population = np.delete()
-					b_winner = True
-			"""
 			
 			#print("f(u):")
 			#print(f_u)
@@ -224,86 +217,10 @@ class MOEAD_ADA(LabelBasedClusteringMOEA):
 			epoch_times.append(time.time() - start_epoch)
 			total_evals_per_epoch.append(self._evals)
 			
+		# Actualización de la población externa (a partir de la población interna final)
+		#for i in range(self._population.shape[0]):
+			#self.update_external_population(self._population[i], self._FV[i])
+		
 		return self._EP, self._EP_chromosomes, self._lambdas, total_evals_per_epoch, np.median(epoch_times) * self._epochs, self._last_EP_update_eval
 		#return self._EP, self._EP_chromosomes
-
-
-
-"""
-	PRUEBAS
-"""
-
-if __name__ == "__main__":
-	
-	random.seed(123)
-	np.random.seed(123)
-	
-	print("Distancia entre un vector y las filas de una matriz")
-	m = np.array([[0.0,0.0],
-			   [1.0,0.0],
-			   [1.0,1.0],
-			   [2.0,0.0]])
-	v = np.array([[1.0,0.0]])
-	dists = euclidean_distances(v,m)
-	dists_1d = dists.flatten()
-	dist_rep = np.reshape(dists_1d,(1,dists_1d.size))
-	print(m)
-	print(v)
-	print(dists)
-	print()
-	
-	
-	
-	print("Delete test")
-	vl = np.random.randint(0,99,10)
-	mask = vl < 60
-	num_mask = np.array([i for i in range(vl.size) if vl[i] < 60])
-	reduc_vl = np.delete(vl,mask)
-	reduc_vl_num = np.delete(vl,num_mask)
-	
-	print(vl)
-	print(mask)
-	print(num_mask)
-	print(reduc_vl)
-	print(reduc_vl_num)
-	
-	
-	print("Restar un vector a una matriz")
-	m2 = np.array([[1.0,1.0],
-			   [2.0,2.0],
-			   [3.0,3.0],
-			   [4.0,4.0]])
-	v2 = np.array([1.0,1.0])
-	rest2 = m2-v2
-	print(m2)
-	print(v2)
-	print(rest2)
-	print()
-	
-	
-	
-	print("Mínimo entre dos vectores")
-	v3 = np.array([1,65,3,66,5,2])
-	v4 = np.array([2,4,99,4,1,1])
-	v_min = np.minimum(v3,v4)
-	print(v3)
-	print(v4)
-	print(v_min)
-	print()
-	
-	
-	# Normalizar matriz
-	
-	matr = np.array([[2,66,4,2,8],
-				     [9,1,64,84,33],
-				     [2,24,7,43,5],
-				     [76,2,5,67,39],
-				     [12,23,77,6,4]])
-		
-	z_max = np.amax(matr)
-	z_min = np.amin(matr)
-				
-		
-	norm_matr = (matr-z_min)/(z_max-z_min)
-	
 

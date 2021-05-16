@@ -369,7 +369,8 @@ class LabelBasedClusteringMOEA:
 			if self._maximization:
 				return self.weighted_sum_approach(a, lambda_weight_vector) >= self.weighted_sum_approach(b, lambda_weight_vector)
 			else:
-				return self.weighted_sum_approach(a, lambda_weight_vector) <= self.weighted_sum_approach(b, lambda_weight_vector)
+				# Por defecto: Tchebycheff
+				return self.tchebycheff_approach(a, lambda_weight_vector) <= self.tchebycheff_approach(b, lambda_weight_vector)
 	
 
 ###############################################################################
@@ -426,8 +427,7 @@ class LabelBasedClusteringMOEA:
 		# Matriz de distancias de los vectores lambda
 		lambdas_distances = pairwise_distances(self._lambdas, Y=None, metric='euclidean')
 		# Vecindario de cada vector de pesos lambda-i
-		self._lambda_neighborhood = lambdas_distances.argsort(axis = 1)[:,1:self._neighborhood_size+1] # COMPROBADO
-		#self._lambda_neighborhood = lambdas_distances.argsort(axis = 1)[:,:self._neighborhood_size]
+		self._lambda_neighborhood = lambdas_distances.argsort(axis = 1)[:,0:self._neighborhood_size] # COMPROBADO
 		
 ###############################################################################
 ###############################################################################
