@@ -1,0 +1,301 @@
+\chapter{Metodología}\label{ch:methodology}
+
+Como se anticipó en el capítulo introductorio, la segunda parte de este trabajo gira en torno a la experimentación realizada. En este capítulo en concreto se explicarán todos los datos, parámetros, variantes y medidas de rendimiento elegidos para los experimentos.
+
+\section{Esquema de codificación}
+
+Para aplicar ADA al problema del clustering con restricciones, se empleará un esquema de \textbf{representación entera basada en etiquetas}. Existen dos principales motivos por los que la representación basada en etiquetas es una buena opción para el clustering y el clustering con restricciones:
+
+\begin{enumerate}
+ \item La representación basada en etiquetas permite la \textbf{formación de clusters con cualquier forma}. En general, los esquemas de codificación entera, tanto la basada en etiquetas como la basada en grafos, son capaces de generar clusters no convexos, a diferencia de los esquemas de representación binarios y de representación real, los cuales, al basarse en la cercanía de cada instancia a los centroides, únicamente forman clusters convexos.
+ 
+ \item La representación basada en etiquetas es la \textbf{forma de representación más directa}. Este esquema de representación es la única que no requiere de un proceso de \emph{decodificación} a posteriori para averiguar a qué cluster pertenece cada punto o instancia, puesto que esa información ya queda representada de forma explícita. Por tanto, será más rápido evaluar una solución (es decir, obtener sus valores objetivo).
+ 
+ En el caso de la representación entera basada en grafos, habría que decodificar los grafos dirigidos que representan las soluciones, viendo en cada caso a qué otras instancias está conectada cada una para identificar los componentes conexos, cada uno de los cuales representaría un cluster distinto.
+ 
+ Por su parte, en la representación binaria y la representación real, para saber a qué cluster pertenece cada instancia, hace falta comprobar cuál de los $k$ centroides es el más cercano a ella.
+ 
+ En definitiva, al decodificar una solución de alguno de los esquemas de representación que así lo requieren, el resultado obtenido es un vector con las etiquetas que indican a qué cluster pertenece cada objeto o instancia, por lo que si se opta desde el principio por la representación basada en etiquetas no haría falta aplicar dicho proceso de decodificación a las soluciones.
+\end{enumerate}
+
+\section{Funciones objetivo a optimizar}
+
+Como ya se dijo, en este trabajo se pretende enfocar el problema de clustering con restricciones como un problema de optimización. Así pues, se emplearán tres funciones objetivo: dos de ellas corresponden a índices de validación de los vistos en la sección \ref{subsct:cvi}, y una tercera mide el grado en que se satisfacen (o violan) las restricciones.
+
+Los dos índices de validación elegidos son el \textbf{índice Davies-Bouldin} y el \textbf{índice de conectividad}, definidos según las expresiones (\ref{eq:db}) y (\ref{eq:conn}), respectivamente. El índice Davies-Bouldin consiste en un valor que tiene en cuenta tanto la cohesión de cada cluster como la separación de cada cluster. Por su parte, el índice de conectividad penaliza a las instancias cuyas instancias vecinas (o sea, las más cercanas) pertenezcan a clusters distintos, favoreciendo que los elementos de distintos clusters se mantengan a una cierta distancia y contribuyendo, de esta forma, a la separación entre clusters. En definitiva, estos dos índices juntos constituyen una buena forma de estimar (y mejorar) la calidad de una solución de clustering.
+
+Por su parte, la tercera función objetivo, que es la que tiene en cuenta las restricciones, consiste simplemente en el \textbf{número de restricciones insatisfechas}, es decir, la suma de restricciones, tanto Must-Link como Cannot-Link, que no han sido satisfechas:
+
+\begin{equation}
+	Insatis(\textbf{C}, C_{=}, C_{\not=}) = Insatis(\textbf{C},C_{=}) + Insatis(\textbf{C},C_{\not=}),
+\end{equation}
+
+
+donde $\textbf{C}$ es una solución de clustering, y $C_{=}$ y $C_{\not=}$ son los conjuntos de restricciones ML y CL, respectivamente.
+
+Las tres funciones objetivo son de minimización, y además están acotadas inferiormente ya que el valor mínimo de todas ellas es de $0$. Esto último será especialmente relevante a la hora de definir el vector de referencia $\textbf{z}^*$, usado en los métodos de descomposición de Tchebycheff, BI y PBI.
+
+\section{Variantes de ADA}
+
+Este trabajo tiene como fin comprobar cómo funciona ADA con el problema del clustering con restricciones. Para ello, se aplicará ADA al algoritmo MOEA/D y se introducirán pequeñas modificaciones hasta crear un total de $8$ variantes de ADA distintas, las cuales serán comparadas entre ellas. Las variantes con las que se experimentará son las siguientes:
+
+\begin{itemize}
+	\item $\textbf{MOEA/D-ADA}$: la versión más básica que se probará. Tal y como ocurre en el algoritmo MOEA/D-AGR-ADA, la forma de comprobar si una solución es peor que otra, así como la asignación de las soluciones a subproblemas, se hará con el método de Tchebycheff. No se aplicará normalización a los valores objetivo de las soluviones.
+	\item $\textbf{MOEA/D-ADA}_{Norm}$: esta versión es exactamente igual a la anterior, con la única diferencia de que los valores objetivo se normalizan, tal y como se especifica en el planteamiento original de ADA, con el fin de que las distintas en las que se mueven las funciones objetivo no influyan. La normalización consiste en un escalado simple que utiliza el punto ideal $\textbf{z}^*$ para que los valores objetivo pasen al rango $[0,1]$. Suponiendo minimización:
+	\begin{equation}
+	f'_i(\textbf{x}) = \frac{f'_i(\textbf{x})-\textbf{z}^*_{\text{peor}}}{\textbf{z}^*-\textbf{z}^*_{\text{peor}}},
+	\end{equation}
+	donde $\textbf{z}^*_{\text{peor}}$ representa el punto contrario a $\textbf{z}^*$, es decir, el punto con los máximos valores objetivo encontrados hasta el momento. 
+	\item $\textbf{MOEA/D-ADA-PD}$: partiendo de la versión básica, $\text{MOEA/D-ADA}$, en la asignación de subproblemas se empleará, en lugar del método de Tchebycheff, la distancia perpendicular entre la solución y el vector de pesos, tomando la idea del algoritmo MOEA/D-AD.
+	\item $\textbf{MOEA/D-ADA-PD}_{Norm~A}$: idéntica a $\textbf{MOEA/D-ADA-PD}$, pero con normalización de valores objetivo
+	\item $\textbf{MOEA/D-ADA-PD}_{Norm~B}$:
+	\item $\textbf{MOEA/D-ADA-PD-SSPS}$:
+	\item $\textbf{MOEA/D-ADA-KM}$: versión idéntica a $\text{MOEA/D-ADA}$, pero aplicando el algoritmo de $k$-medias al 20\% de la población inicial. Esto puede ser beneficioso si en los conjuntos de datos con los que se vayan a usar estos algoritmos predominan los clusters convexos, pero puede no ser el caso. De hecho, este es uno de los motivos por los que se utilizan restricciones: para evitar la tendencia a generar clusters convexos o hiperesféricos, corrigiendo su forma según la información disponible sobre la solución óptima.
+	\item $\textbf{MOEA/D-ADA-PD-KM}$: de forma análoga a la versión anterior, esta versión es como $\text{MOEA/D-ADA-PD}$ pero aplicando $k$-medias al 20\% de la población tras la inicialización.
+\end{itemize}
+
+%\newgeometry{left=1.0cm}
+\begin{table}[h]
+\centering
+\caption{Variantes de ADA comparadas}
+\resizebox{1.3\textwidth}{!}{
+	\begin{tabular}{|c|c|c|c|c|}
+	\hline
+	Variante & Normalización & Op. selección & Op. asignación & Inic. con $k$-medias\\
+	\hline
+	$\text{MOEA/D-ADA}$ & No & Padres aleatorios& Tchebycheff & No\\
+	$\text{MOEA/D-ADA}_{Norm}$ & Sí & Padres aleatorios  & Tchebycheff & No\\
+	$\text{MOEA/D-ADA-PD}$ & No & Padres aleatorios & Dist. perpendicular & No\\
+	$\text{MOEA/D-ADA-PD}_{Norm~A}$ & Sí & Padres aleatorios & Dist. perpendicular & No\\
+	$\text{MOEA/D-ADA-PD}_{Norm~B}$ & Solo en op. asign. & Padres aleatorios de $P$ &  Dist. perpendicular & No\\
+
+	$\text{MOEA/D-ADA-PD-SSPS}$ & No & Padres aleat. asignados al mismo subprob. & Tchebycheff & No\\
+	$\text{MOEA/D-ADA-KM}$ & No & Padres aleatorios& Tchebycheff & 20\% población\\
+	$\text{MOEA/D-ADA-PD-KM}$ & No & Padres aleatorios de& Dist. perpendicular & 20\% población\\
+	\hline
+	\end{tabular}
+}
+\label{tab:constraints}
+\end{table}
+%\restoregeometry
+
+\subsection{Inclusión de población externa}
+
+En todas las variantes se ha incluido un mecanismo de población externa ($EP$) que no existía en ADA. Obtener soluciones no dominadas de $P$ da como resultado demasiado pocas soluciones, con lo cual es menos probable terminar con soluciones tan buenas que como si se tuviese una población externa que guarde todas las soluciones no dominadas obtenidas hasta el momento a lo largo de la ejecución del algoritmo. Puede que se pierda algo de diversidad (en espacio objetivo y espacio de soluciones) porque puede que existan soluciones que durante el proceso de búsqueda de ADA fuesen eliminadas por ser peores que una solución que fuese mejor según el método de Tchebycheff, y que además estas estuviesen en su vecindario y asignadas al mismo subproblema. Sin embargo, tras los estudios preliminares, se puede decir que se consiguen mejores resultados en general manteniendo las soluciones no dominadas en una población externa.
+
+\subsection{Métrica de distancia en el espacio de soluciones}
+
+Algo a tener en cuenta a la hora de aplicar ADA a un problema de optimización es el criterio de vecindario de soluciones de ADA (ver sección \ref{sec:neigh}). En todas las variantes que se han usado aquí, el criterio de vecindario usado para construir el conjunto $X$ se basa en la \textbf{distancia euclídea}. Bien es cierto que en \cite{tanabe2019framework} y en \cite{tanabe2018decomposition} se emplea la distancia euclídea normalizada, es decir, la distancia euclídea entre dos puntos habiendo normalizado antes ambos puntos para que sus valores/características/cromosomas adopten únicamente valores entre 0 y 1. Sin embargo, en nuestro caso no es necesario normalizar las soluciones, puesto que, al haber optado por un esquema de codificación entera basado en etiquetas, todas las variables/características tienen el mismo rango de valores, esto es, valores enteros entre el $0$ y $K$, siendo $K$ el número de clusters para ese conjunto de datos.
+
+No obstante, en el problema que nos ocupa (clustering con restricciones) y el esquema de representación de soluciones escogido (codificación entera basada en etiquetas), existe un problema a la hora de usar la distancia euclídea entre soluciones. Tal y como se dijo en la sección sección \ref{sec:neigh}, la idea del criterio de vecindario se emplea para determinar si una solución aporta o no diversidad al espacio de soluciones en función de si se considera una solución vecina, o lo que es lo mismo, una solución cercana. Para ello, el criterio de vecindario se sirve de una métrica de distancia dada para saber qué soluciones son más similares entre ellas, de forma que, como es lógico, cuanto más cercanas sean dos soluciones en el espacio de soluciones, más similares serán. Así pues, la distancia euclídea podría decirse que es la opción estándar para determinar la cercanía o similitud entre dos puntos en un espacio $D$-dimensional. No obstante, cuando las soluciones codifican la etiqueta asignada a cada instancia en un problema de clustering (o de clustering con restricciones), la distancia euclídea puede que no sea la mejor de las opciones. A continuación se verá por qué.
+
+Supongamos que se pretende resolver un problema de clustering con $k=2$ clusters o etiquetas para un conjunto de datos de 4 instancias. Supongamos también que, en la población de soluciones $P$, existen dos soluciones $\textbf{x}_a$ y $\textbf{x}_b$ tales que $\textbf{x}_a = (0,0,1,1)$ y $\textbf{x}_a = (1,1,0,0)$. La distancia euclídea entre ambos puntos será de $\sqrt{1^2+1^2+1^2+1^2} = \sqrt{4} = 2$. Sin embargo, lo cierto es que tanto $\textbf{x}_a$ como $\textbf{x}_b$ \textbf{representan exactamente la misma solución}: los dos primeros puntos o instancias del conjunto de datos pertenecen a un cluster, y los dos últimos al otro. Es cierto que, con la distancia euclídea, la distancia desde $\textbf{x}_a$ a sí misma es igual a $0$, y lo mismo con $\textbf{x}_b$, pero la distancia entre $\textbf{x}_a$ y $\textbf{x}_b$ no es igual a $0$ a pesar de codificar lo mismo.
+
+
+
+
+\section{Parámetros}
+
+Para hacer la comparativa lo más justa posible, se emplearán los mismos parámetros en todas las variantes de ADA:
+
+\begin{itemize}
+ \item El \textbf{operador de cruce} será el \textbf{uniforme}. Se trata de un operador de propósito general ampliamente usado, que puede utilizarse en cualquier problema que admita un esquema de codificación entera.
+ \item El \textbf{método de descomposición} usado para descomponer el frente de Pareto en subproblemas de optimización escalares será el de \textbf{Tchebycheff}. Es cierto que PBI puede ofrecer mejores resultados, pero para ello habría que invertir bastante tiempo en ajustar de la forma óptima el parámetro $\theta$ (ver ecuación (\ref{eq:pbi})).
+	\item La \textbf{probabilidad de heredar} del primer padre en el operador de cruce será del $0.5$. De esta forma existirá la misma probabilidad para ambos padres.
+	\item La \textbf{probabilidad de mutar} un gen será de $0.1$. En los pequeños estudios preliminares, este ha demostrado ser un valor que da un buen equilibrio entre la introducción de indeterminismo y nueva información (exploración), y la mantención de las características heredadas de los padres (explotación).
+	\item El \textbf{número de subproblemas} $N$, así como el valor inicial de $\mu$ (el tamaño de la población $P$), será de $100$, el mismo usado en la experimentación realizada en \cite{tanabe2018decomposition}.
+	\item El \textbf{tamaño de vecindario} $\lfloor\tau \cdot \mu\rfloor$, dado por el valor de proporción de vecindario $\tau$, será de $\lfloor 0.1 \cdot \mu \rfloor$. En \cite{tanabe2019framework} y \cite{tanabe2018decomposition} ese es el valor que mejores resultados parece ofrecer.
+	\item El \textbf{punto de referencia}, usado en el método de Tchebycheff, quedará fijado en $\textbf{z}^* = (0,0,0)^T$. Teniendo en cuenta que las tres funciones objetivo son de minimización, que todas están acotadas inferiormente, y que además el ínfimo de todas es $0$, establecer $\textbf{z}^*$ en ese valor es lo más lógico.
+	\item El \textbf{máximo número de evaluaciones} se establecerá en unas $300000$ evaluaciones. Se trata una cantidad adecuada, porque da el suficiente tiempo a los algoritmos a que obtengan soluciones lo suficientemente buenas pero sin que se emplee demasiado tiempo en cada ejecución.
+\end{itemize}
+
+
+\begin{table}[h]
+\centering
+\caption{Valores escogidos para los parámetros e hiperparámetros de ADA}
+\begin{tabular}{|cc|}
+\hline
+Parámetro & Valor \\
+\hline
+Operador de cruce & Uniforme\\
+Método de descomposición & Tchebycheff\\
+Probabilidad de cruce & $0.5$\\
+Probabilidad de mutación & $0.1$\\
+Número de subproblemas $N$ & $100$\\
+Tamaño de vecindario $\lfloor\tau \cdot \mu\rfloor$ & $\lfloor 0.1 \cdot \mu \rfloor$\\
+Punto ideal/de referencia $\textbf{z}^*$ & $(0,0,0)^T$\\
+Nº máximo evaluaciones & $300000$\\
+
+\hline
+\end{tabular}
+\label{tab:adaparams}
+\end{table}
+
+
+
+\section{Conjuntos de datos y de restricciones}
+
+Los experimentos se han realizado con un total de 20 conjuntos de datos distintos. Todos ellos son bastante conocidos y ampliamente usados como \emph{benchmarks} para probar distintos algoritmos, tanto ya existentes como nuevas propuestas de mejora del estado del arte. Todos los conjuntos de datos están disponibles en el repositorio de datasets de KEEL, la herramienta de minería de datos basada en algoritmos evolutivos desarrollada en la Universidad de Granada (ref), y pueden ser descargados desde el siguiente enlace: \url{https://sci2s.ugr.es/keel/category.php?cat=clas}. En la tabla \ref{tab:datasets} se expone en un formato resumido la información más relevante de estos 20 conjuntos de datos.
+
+
+\begin{table}[h]
+\centering
+%\tiny
+\small
+\caption{Resumen de los conjuntos de datos}
+\begin{tabular}{|c|c|c|c|}
+\hline
+Dataset & Nº Instancias & Dimensiones & Nº clusters  \\
+ & &(Nº características)&(sol. verdadera)\\
+\hline
+Appendicitis & 106 & 7 & 2 \\ 
+Balance & 625 & 4 & 3\\ 
+Banana\footnotemark & 1590 & 2 & 2\\ 
+Bupa & 345 & 5 & 16 \\ 
+Ecoli & 336 & 7 & 8 \\ 
+Glass & 214 & 9 & 6 \\ 
+Haberman & 306 & 3 & 2 \\ 
+Hayes Roth & 160 & 4 & 3 \\ 
+Heart & 270 & 13 & 2\\ 
+Iris & 150 & 4 & 3 \\ 
+Led7Digit & 500 & 7 & 10\\ 
+Monk2 & 432 & 6 & 2 \\ 
+Newthyroid & 215 & 5 & 3 \\ 
+Pima & 768 & 8 & 2 \\ 
+Saheart & 462 & 9 & 2 \\ 
+Soybean & 47 & 35 & 4\\ 
+Tae & 151 & 5 & 3 \\ 
+Titanic\footnotemark[\value{footnote}] & 661 & 3 & 2\\ 
+Wine & 178 & 13 & 3 \\ 
+Zoo & 101 & 16 & 7 \\
+
+\hline
+\end{tabular}
+\label{tab:datasets}
+
+\end{table}
+
+
+
+
+A su vez, para cada conjunto de datos se dispone de tres conjuntos de restricciones a nivel de instancia, que quedan en seis si separamos cada conjunto en restricciones Must-Link y restricciones Cannot-Link. Las restricciones han sido obtenidas directamente de las etiquetas de las soluciones verdaderas, de forma aleatoria y evitando cualquier tipo de sesgo. En concreto, el número de restricciones que contendrán cada uno de los tres conjuntos de restricciones para cada dataset afectarán al 10\%, 15\% y del 20\% de objetos o instancias del correspondiente conjunto de datos, respectivamente. De esta forma, se podrá comprobar en qué medida afecta a los resultados distintas cantidades de restricciones en un mismo conjunto de datos.
+
+
+\begin{table}[h]
+\centering
+%\tiny
+\caption{Tamaños de los conjuntos de restricciones}
+\resizebox{1.0\textwidth}{!}{
+	\begin{tabular}{|c|cc|cc|cc|}
+	\hline
+	Dataset & Restric. & 10\%  & Restric. & 15\%  & Restric. & 20\%   \\
+	 & ML & CL & ML & CL & ML & CL\\
+	\hline
+	Appendicitis & 37 & 18 & 76 & 44 & 154 & 77 \\ 
+	Balance & 841 & 1112 & 1846 & 2525 & 3324 & 4426 \\ 
+	Banana (muestra) & 6368 & 6193 & 14311 & 14130 & 25509 & 24894 \\ 
+	Bupa & 91 & 504 & 217 & 1109 & 374 & 1972 \\ 
+	Ecoli & 147 & 414 & 352 & 923 & 644 & 1634 \\ 
+	Glass & 58 & 173 & 138 & 390 & 233 & 670 \\ 
+	Haberman & 273 & 192 & 631 & 404 & 1173 & 718 \\ 
+	Hayes Roth & 47 & 73 & 86 & 190 & 177 & 319 \\ 
+	Heart & 173 & 178 & 436 & 384 & 747 & 684 \\ 
+	Iris & 28 & 77 & 92 & 161 & 132 & 303 \\ 
+	Led7Digit & 133 & 1092 & 258 & 2517 & 492 & 4458 \\ 
+	Monk2 & 484 & 462 & 1064 & 1016 & 1835 & 1906 \\ 
+	Newthyroid & 125 & 106 & 273 & 255 & 488 & 415 \\ 
+	Pima & 1572 & 1354 & 3601 & 3069 & 6443 & 53338 \\ 
+	Saheart & 613 & 468 & 1281 & 1134 & 2368 & 1910 \\ 
+	Soybean & 1 & 9 & 11 & 17 & 5 & 40 \\ 
+	Tae & 31 & 89 & 88 & 165 & 164 & 301 \\ 
+	Titanic (muestra) & 1249 & 962 & 2721 & 2229 & 4908 & 3870 \\ 
+	Wine & 57 & 96 & 105 & 246 & 210 & 420 \\ 
+	Zoo & 13 & 42 & 27 & 93 & 53 & 157 \\ 
+	\hline
+	\end{tabular}
+}
+\label{tab:constraints}
+\end{table}
+
+
+Se puede apreciar en la tabla \ref{tab:datasets} la diversidad presente en las características de los conjuntos de datos: hay conjuntos de datos con muchas instancias y pocas dimensiones, así como conjuntos de pocas instancias pero con una dimensionalidad considerable. También puede verse en la tabla \ref{tab:constraints} que, para algunos conjuntos de datos, las cantidades restricciones ML y CL están más o menos balanceadas, mientras que en otros tienen un peso mucho mayor las restricciones CL. 
+
+
+
+
+\section{Ejecución y métricas de evaluación}
+
+
+Para medir los resultados obtenidos con cada variante de ADA, se emplearán 4 medidas distintas, las cuales podemos agrupar en dos categorías: las métricas a nivel de partición o solución, y las métricas a nivel de frente de Pareto.
+
+\subsection{Métricas a nivel de partición}
+
+Las métricas a nivel de partición miden la calidad de una solución individual obtenida por un determinado algoritmo de clustering (con o sin restricciones). En el caso de la optimización multiobjetivo, pueden usarse para determinar la mejor solución de un frente de Pareto, lo que a su vez permite tener una idea de la calidad general de todo el frente.
+
+La primera métrica que se usará es el \textbf{Índice de Rand Ajustado} o \textbf{ARI} (\emph{Adjusted Rand Index}). ARI es la versión corregida del Índice de Rand o RI (\emph{Rand Index}), que a su vez es un método para comparar dos particiones (soluciones de clustering), calculando para ello el grado de similitud entre las dos particiones dadas (cite RI). Sean $\textbf{C}_1$ y $\textbf{C}_2$ dos soluciones de clustering, esto es, dos particiones distintas de un mismo conjunto de datos $\textbf{X}$. Cualquier partición puede entenderse como una colección de $\binom{n}{2}$ valores correspondientes a pares $(i,j)$ (siendo $n=|\textbf{X}|$ el número de instancias en el conjunto de datos), de forma que a cada par $(i,j)$ le correspondería un valor que indicase si los elementos $\textbf{x}_i \in \textbf{X}$ y $\textbf{x}_j \in \textbf{X}$ pertenecen a un mismo cluster o no. Por ejemplo, si al par $(i,j)$ le corresponde el valor $1$, significaría que $\textbf{x}_i$ y $\textbf{x}_j$ sí pertenecen al mismo cluster, y si fuese $0$ entonces pertenecen a distintos clusters. Así pues, sea $s$ el número de pares en los que ambos elementos pertenecen al mismo cluster tanto en la partición $\textbf{C}_1$ como en $\textbf{C}_2$, y sea $d$ el número de pares que pertenecen a clusters distintos en ambas particiones. El índice de Rand se calcula según la siguiente expresión (cite MEMOEA/D):
+
+\begin{equation}
+	RI(\textbf{C}_1,\textbf{C}_2) = \frac{s+d}{\binom{n}{2}} = \frac{s+d}{n(n-1)/2}.
+\end{equation}
+
+$RI$ puede adoptar valores dentro del intervalo $[0,1]$, de forma que cuanto más cercano a $1$ sea el valor, más parecidas serán las particiones.
+
+La anterior expresión puede ser corregida para lidiar con particiones aleatorias mediante el uso de un valor esperado del índice de Rand y un valor máximo, dando como resultado lo que se conoce como Índice de Rand Ajustado (cite ARI):
+
+\begin{equation}
+	ARI(\textbf{C}_1,\textbf{C}_2) = \frac{RI(\textbf{C}_1,\textbf{C}_2) - RI\text{ Esperado}}{RI\text{ Máximo} - RI\text{ Esperado}},
+\end{equation}
+
+donde $RI\text{ Esperado}$ es el valor esperado del índice de Rand para una partición aleatoria, y $RI\text{ Máximo}$ se asume que es igual a $1$. $ARI$ puede adoptar valores en el intervalo $[-1,1]$. Las particiones aleatorias tenderán a tener un índice de Rand cercano al $RI$ esperado cuando se comparen con otra solución, por lo que su $ARI$ será cercano a 0. De esta forma, las agrupaciones generadas de forma aleatoria difícilmente adoptarán valores cercanos a $1$.
+
+Tanto $RI$ como $ARI$ son usados para medir la calidad de una solución al compararla con la solución verdadera. A diferencia de los índices de valoración presentados en la sección \ref{subsct:cvi}, ARI y el índice Rand hacen uso de la solución óptima para evaluar soluciones de clustering. Después de todo, ambos son métodos para comparar cómo de similares son dos particiones, y comparar una solución cualquiera directamente con la verdadera (óptima) permite saber cómo de buena es dicha solución.
+
+La segunda medida basada en particiones consiste en la \textbf{proporción de restricciones que no han sido satisfechas}, que en (cite MEMOEA/D) recibe el nombre de \textbf{UNSAT}. Se calcula como el número de restricciones no satisfechas entre el número total de restricciones.
+
+\begin{equation}
+	UNSAT(\textbf{C}) = \frac{Insatis(\textbf{C}, C_{=}, C_{\not=})}{|C_{=}| + |C_{\not=}|}
+\end{equation}
+
+Como ya se ha dicho, se trata de una proporción, por lo que siempre adopta valores en el intervalo $[0,1]$, y lo deseable en cualquier caso es obtener valores lo más cercanos a $0$ posibles, ya que esto significaría que apenas se están violando restricciones.
+
+Es inportante recordar que estas dos medidas evaluan particiones, o sea, soluciones de clustering. Se tratan, por tanto, de medidas específicas del problema que estamos tratando, por lo que los índices de validación que se escojan como funciones objetivo, las cuales también son específicas del problema, repercutirán en los valores resultantes de estas medidas.
+
+\subsection{Métricas a nivel de frente de Pareto}
+
+Las métricas de frente de Pareto, como su propio nombre indica, hacer referencia a las características del frente de Pareto entero, en lugar de enfocarse en una solución concreta. Estas medidas son propias de la optimización multiobjetivo en general, por lo que son independientes del problema a resolver. Por tanto, con este tipo de métricas no se entra a valorar la idoneidad de las funciones objetivo, específicamente elegidas para el problema en cuestión. En \cite{zitzler2003performance} se enumeran diversos métodos de evaluación para la optimización multiobjetivo.
+
+
+La primera métrica que se usará, la cual es mencionada en \cite{zitzler2003performance}, es el \textbf{hipervolúmen} del frente de Pareto. Propuesto por primera vez en \cite{zitzler1998multiobjective}, y analizado en  \cite{beume2009complexity} para estudiar formas eficientes de calcularlo, el hipervolúmen puede definirse de la siguiente forma:
+
+\begin{definicion}
+	
+	\emph{\textbf{Hipervolúmen}:} Dado un conjunto finito de puntos $\mathcal{P}$ en el ortante positivo $\mathbb{R}^d_{\ge 0}$, el indicador de hipervolúmen se define como el volúmen $d$-dimensional del politopo ortogonal sin agujeros
+	
+	\begin{equation}
+		\Pi^d = \{ \textbf{x} \in  \mathbb{R}^d_{\ge 0} ~|~ \textbf{p} \preceq \textbf{x} \land \textbf{x} \preceq \textbf{r}~~\forall \textbf{p} \in \mathcal{P}\},
+	\end{equation} 
+	
+	donde $\textbf{r}$ es un punto de referencia usado para calcular el hipervolúmen, el cual es dominado por todos los putos de $\mathcal{P}$. El politopo $\Pi^d$ corresponde a todo el espacio de $\mathbb{R}^d_{\ge 0}$ dominado por todos los puntos de $\mathcal{P}$ y que, a su vez, domina a $\textbf{r}$ \cite{beume2009complexity} (cite MEMOEA/D). 
+	
+\end{definicion}
+
+La métrica del hipervolúmen nos permite saber cómo de compacto es el frente de Pareto obtenido, puesto que si este está compuesto de muchos puntos muy cercanos entre sí, habrá menos \emph{huecos} en el politopo, y el hipervolúmen será mayor. Además, si se utiliza siempre el mismo punto de referencia $\textbf{r}$ en cada conjunto de datos, podremos saber qué algoritmos generan un frente de Pareto más cercano al origen de coordenadas.
+
+La segunda métrica es sencilla: se trata del \textbf{tamaño del frente de Pareto}. Con esto, se podrá conocer cuántas soluciones no dominadas produce un cierto algoritmo o variante. Sin embargo, esta medida no aporta información demasiado útil por sí sola, sino que es necesario tenerla en cuenta en su contexto, y verla junto con el resto de métricas de calidad.
+
+
+\subsection{Ejecución de los experimentos}
+
+Todos los experimentos han sido ejecutados en el servidor de cómputo Hércules de la Universidad de Granada. En el momento de realizar los experimentos, Hércules consta de 19 nodos de cómputo, cada uno de los cuales dispone de 2 procesadores Intel Xeon Silver 4214 a 2.2 GHz (12 núcleos), 56 GB de memoria RAM DDR4, 1 disco duro SATA de 6 TB, 1 disco SSD NVME de 512 GB y el sistema operativo Ubuntu 20.04 LTS.
+
+Cada variante de ADA será ejecutada unas 5 veces con cada conjunto de datos y cada conjunto de restricciones. Esto es: 5 ejecuciones por 20 conjuntos de datos por 3 conjuntos de restricciones, lo que hacen un total de $5 \times 20 \times 3 = 300$ ejecuciones con cada variante de ADA.
+
+En cada ejecución de una variante de ADA se obtienen como salida, entre otras cosas, los frentes de Pareto (valores objetivo) y las correspondientes soluciones (cromosomas), con los cuales se calculan las métricas de rendimiento que previamente se han descrito. Posteriormente, se promedian (obteniendo tanto la media como la desviación típica) los resultados de las 5 ejecuciones, con lo cual, para cada variante de ADA, obtendremos los correspondientes valores de las 4 métricas de rendimiento para cada conjunto de datos y cada conjunto de restricciones.
+
+
+
+
+\footnotetext{Para conjuntos de datos Banana y Titanic se ha tomado una muestra de los originales. Los tamaños de los conjuntos de datos originales son de 5300 y 2201 instancias, respectivamente.}
+
+
+
